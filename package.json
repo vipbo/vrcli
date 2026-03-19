@@ -2,17 +2,41 @@
   "name": "vrcli",
   "version": "0.1.0",
   "description": "A multi-template scaffolding CLI for Vue/React repositories.",
+  "license": "MIT",
+  "keywords": [
+    "cli",
+    "scaffold",
+    "scaffolding",
+    "template",
+    "vue",
+    "react"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vipbo/vrcli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vipbo/vrcli/issues"
+  },
+  "homepage": "https://github.com/vipbo/vrcli#readme",
   "bin": {
     "vrcli": "./bin/vrcli.js"
   },
   "type": "module",
   "scripts": {
     "start": "node ./bin/vrcli.js",
-    "create": "node ./bin/vrcli.js create"
+    "create": "node ./bin/vrcli.js create",
+    "prepublishOnly": "node ./bin/vrcli.js --help && node ./bin/vrcli.js --list"
   },
   "engines": {
     "node": ">=18"
   },
+  "files": [
+    "bin/",
+    "src/",
+    "readme.md",
+    "LICENSE"
+  ],
   "dependencies": {
     "inquirer": "^9.3.7"
   }

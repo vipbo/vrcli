@@ -4,10 +4,25 @@
 
 当前内置模板：
 
-- `vue` -> `git@github.com:vipbo/my-cli.git`
-- `react` -> `git@github.com:vipbo/my-react-template.git`
+- `vue` -> `https://github.com/vipbo/my-cli.git`
+- `react` -> `https://github.com/vipbo/my-react-template.git`
 
 ## 使用方式
+
+### 0) 直接使用（推荐）
+
+无需安装到全局：
+
+```bash
+npx vrcli create my-app --template vue
+```
+
+或全局安装：
+
+```bash
+npm i -g vrcli
+vrcli create my-app --template react
+```
 
 ### 1) 安装依赖
 
@@ -66,6 +81,7 @@ vrcli --help
 2. CLI 让用户选择模板（或使用 `--template` 直接指定）。
 3. 通过 `git clone` 拉取对应模板仓库到新目录。
 4. 自动移除模板仓库里的 `.git`，避免继承模板历史提交。
+
 
 ## 团队协作建议
 
