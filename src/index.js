@@ -4,6 +4,22 @@ import inquirer from "inquirer";
 import { spawnSync } from "node:child_process";
 import { templates, getTemplateByValue } from "./templates.js";
 
+/**
+ * 解析命令行参数并转换成内部配置对象。
+ * 这样做的原因：后续流程只依赖一个 args 对象，避免在 run() 里到处判断 argv 细节。
+ *
+ * @param {string[]} argv Node 原始 argv
+ * @returns {{
+ *   command: string,
+ *   projectName: string,
+ *   template: string,
+ *   list: boolean,
+ *   help: boolean,
+ *   force: boolean,
+ *   install: boolean,
+ *   retries: number
+ * }}
+ */
 function parseArgs(argv) {
   const args = argv.slice(2);
   const result = {
@@ -67,6 +83,12 @@ function parseArgs(argv) {
   return result;
 }
 
+/**
+ * 输出帮助信息。
+ * 集中维护命令文档，避免散落在业务逻辑中导致不一致。
+ *
+ * @returns {void}
+ */
 function printHelp() {
   console.log(`
 vrcli - 多模板脚手架
@@ -86,6 +108,12 @@ vrcli - 多模板脚手架
 `);
 }
 
+/**
+ * 输出模板列表。
+ * 作为 --list 的只读能力，便于用户快速查看可选模板与仓库地址。
+ *
+ * @returns {void}
+ */
 function printTemplates() {
   console.log("\n可用模板:");
   templates.forEach((item) => {
@@ -94,10 +122,25 @@ function printTemplates() {
   console.log("");
 }
 
+/**
+ * 简单 sleep 工具：在重试前稍作等待，避免瞬时网络抖动导致连续失败。
+ *
+ * @param {number} ms 等待毫秒数
+ * @returns {Promise<void>}
+ */
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * 执行一次 git clone。
+ * 使用 spawnSync + stdio: inherit 的原因：让用户直接看到 git 原始输出，排查问题最直观。
+ *
+ * @param {string} repo 模板仓库地址
+ * @param {string} targetDir 目标目录绝对路径
+ * @returns {void}
+ * @throws {Error} clone 失败时抛出
+ */
 function runGitCloneOnce(repo, targetDir) {
   const command = process.platform === "win32" ? "git.exe" : "git";
   const result = spawnSync(command, ["clone", repo, targetDir], {
@@ -109,6 +152,16 @@ function runGitCloneOnce(repo, targetDir) {
   }
 }
 
+/**
+ * 带重试的 git clone 包装。
+ * 原理：失败后删除半拉取目录，避免下一次重试受到脏目录影响。
+ *
+ * @param {string} repo 模板仓库地址
+ * @param {string} targetDir 目标目录绝对路径
+ * @param {number} retries 失败重试次数
+ * @returns {Promise<void>}
+ * @throws {Error} 所有重试都失败时抛出最后一次错误
+ */
 async function runGitCloneWithRetries(repo, targetDir, retries) {
   let lastError;
   for (let attempt = 0; attempt <= retries; attempt += 1) {
@@ -135,6 +188,13 @@ async function runGitCloneWithRetries(repo, targetDir, retries) {
   throw lastError;
 }
 
+/**
+ * 删除模板仓库中的 .git 目录。
+ * 为什么这样做：新项目应当是用户自己的仓库起点，而不是继承模板提交历史。
+ *
+ * @param {string} targetDir 目标目录绝对路径
+ * @returns {void}
+ */
 function removeGitHistory(targetDir) {
   const gitDir = path.join(targetDir, ".git");
   if (fs.existsSync(gitDir)) {
@@ -142,6 +202,14 @@ function removeGitHistory(targetDir) {
   }
 }
 
+/**
+ * 在目标目录执行 npm install。
+ * 使用同步执行的原因：命令行工具场景下，按步骤串行更可控，输出顺序也更清晰。
+ *
+ * @param {string} targetDir 目标目录绝对路径
+ * @returns {void}
+ * @throws {Error} 安装失败时抛出
+ */
 function runNpmInstall(targetDir) {
   const command = process.platform === "win32" ? "npm.cmd" : "npm";
   const result = spawnSync(command, ["install"], {
@@ -153,6 +221,13 @@ function runNpmInstall(targetDir) {
   }
 }
 
+/**
+ * 解析项目名：优先用命令参数，缺省时进入交互输入。
+ * 这样兼顾了脚本化调用和人工交互两种使用方式。
+ *
+ * @param {string} currentName 命令行传入的项目名
+ * @returns {Promise<string>}
+ */
 async function resolveProjectName(currentName) {
   if (currentName) return currentName.trim();
 
@@ -171,6 +246,13 @@ async function resolveProjectName(currentName) {
   return answers.projectName.trim();
 }
 
+/**
+ * 解析模板：优先使用 --template，否则给出交互列表。
+ * 先校验模板合法性，避免后面 clone 阶段才发现参数错误。
+ *
+ * @param {string} currentTemplate 命令行传入的模板值
+ * @returns {Promise<{name: string, value: string, repo: string, description: string}>}
+ */
 async function resolveTemplate(currentTemplate) {
   if (currentTemplate) {
     const found = getTemplateByValue(currentTemplate);
@@ -195,6 +277,16 @@ async function resolveTemplate(currentTemplate) {
   return getTemplateByValue(answers.template);
 }
 
+/**
+ * 确保目标目录可写入。
+ * 设计思路：默认安全（询问确认），需要自动化时可用 --force 跳过交互。
+ *
+ * @param {string} targetDir 目标目录绝对路径
+ * @param {string} projectName 项目目录名（用于提示）
+ * @param {boolean} force 是否强制覆盖
+ * @returns {Promise<void>}
+ * @throws {Error} 用户取消覆盖时抛出
+ */
 async function ensureTargetDirEmpty(targetDir, projectName, force) {
   if (!fs.existsSync(targetDir)) return;
 
@@ -219,6 +311,14 @@ async function ensureTargetDirEmpty(targetDir, projectName, force) {
   fs.rmSync(targetDir, { recursive: true, force: true });
 }
 
+/**
+ * CLI 主流程入口：
+ * 参数处理 -> 输入解析 -> 目录准备 -> 拉取模板 -> 后置安装 -> 完成提示。
+ * 将流程串起来写在一个函数中，便于阅读和维护整体执行顺序。
+ *
+ * @param {string[]} argv Node 原始 argv
+ * @returns {Promise<void>}
+ */
 export async function run(argv) {
   const args = parseArgs(argv);
 

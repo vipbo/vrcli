@@ -88,3 +88,52 @@ vrcli --help
 - 每个模板独立仓库维护，模板负责人只关心模板内容演进。
 - `vrcli` 仓库只维护模板清单与创建逻辑。
 - 新增模板时，只需在 `src/templates.js` 增加一条配置。
+
+## FAQ
+
+### 1) `vrcli: command not found`
+
+如果你是普通使用者，推荐直接用：
+
+```bash
+npx vrcli create my-app --template vue
+```
+
+如果你希望直接执行 `vrcli` 命令：
+
+```bash
+npm i -g vrcli
+vrcli --help
+```
+
+若仍提示找不到命令，重启当前终端后重试。
+
+### 2) 提示 `git clone` 失败
+
+请检查：
+
+- 本机是否安装 Git（`git --version`）
+- 模板仓库地址是否可访问
+- 网络/代理是否可访问 GitHub
+
+可尝试提高重试次数：
+
+```bash
+vrcli create my-app --template vue --retries 5
+```
+
+### 3) 目录已存在怎么办
+
+默认会询问是否覆盖；也可以强制覆盖：
+
+```bash
+vrcli create my-app --template react --force
+```
+
+### 4) 创建完成后如何自动安装依赖
+
+可使用 `--install`：
+
+```bash
+vrcli create my-app --template vue --install
+```
