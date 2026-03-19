@@ -1,0 +1,19 @@
+{
+  "name": "vrcli",
+  "version": "0.1.0",
+  "description": "A multi-template scaffolding CLI for Vue/React repositories.",
+  "bin": {
+    "vrcli": "./bin/vrcli.js"
+  },
+  "type": "module",
+  "scripts": {
+    "start": "node ./bin/vrcli.js",
+    "create": "node ./bin/vrcli.js create"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "inquirer": "^9.3.7"
+  }
+}
