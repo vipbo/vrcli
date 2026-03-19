@@ -1,5 +1,5 @@
 {
-  "name": "vrcli",
+  "name": "m-vrcli",
   "version": "0.1.0",
   "description": "A multi-template scaffolding CLI for Vue/React repositories.",
   "license": "MIT",
